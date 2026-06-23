@@ -1,2 +1,8 @@
-# code-verifier
-axentx product · A high-accuracy AI code-generation tool that prioritizes correctness over speed, with features such as automated testing and verification to ensure the generated code meets the required standards.
+# Code Verifier
+A simple code verification engine that provides a detailed report on the accuracy and reliability of uploaded code.
+
+## Usage
+1. Run `python -m pytest` to test the code verifier.
+2. Use the `generate_report` function to generate a report for a given code snippet.
+
+## Example
