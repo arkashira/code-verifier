@@ -1,8 +1,9 @@
 # Code Verifier
-A simple code verification engine that provides a detailed report on the accuracy and reliability of uploaded code.
+A simple code validation engine that checks for common low-level coding errors.
 
 ## Usage
-1. Run `python -m pytest` to test the code verifier.
-2. Use the `generate_report` function to generate a report for a given code snippet.
+Create an instance of the `CodeVerifier` class, passing in the code to be validated.
+Call the `validate_and_format` method to get a formatted string of errors.
 
-## Example
+## Testing
+Run the tests using `pytest`.

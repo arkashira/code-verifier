@@ -3,26 +3,33 @@ from dataclasses import dataclass
 from typing import List
 
 @dataclass
-class CodeVerificationReport:
-    accuracy: float
-    reliability: float
-    error_messages: List[str]
-    suggestions: List[str]
+class CodeError:
+    line: int
+    column: int
+    message: str
 
-def verify_code(code: str) -> CodeVerificationReport:
-    # Simple code verification logic for demonstration purposes
-    error_messages = []
-    suggestions = []
-    if "print" in code:
-        error_messages.append("Avoid using print statements")
-        suggestions.append("Use logging instead")
-    if "import" in code:
-        error_messages.append("Avoid using import statements")
-        suggestions.append("Use relative imports instead")
-    accuracy = 1.0 - len(error_messages) / 100
-    reliability = 1.0 - len(suggestions) / 100
-    return CodeVerificationReport(accuracy, reliability, error_messages, suggestions)
+class CodeVerifier:
+    def __init__(self, code: str):
+        self.code = code
 
-def generate_report(code: str) -> str:
-    report = verify_code(code)
-    return json.dumps(report.__dict__, indent=4)
+    def validate(self) -> List[CodeError]:
+        errors = []
+        lines = self.code.split('\n')
+        for i, line in enumerate(lines, start=1):
+            if ' = ' not in line and '=' in line:
+                errors.append(CodeError(i, line.find('='), 'Invalid assignment'))
+            if 'try' in line and 'except' not in lines[i:i+5]:
+                errors.append(CodeError(i, line.find('try'), 'Missing except block'))
+        return errors
+
+    def format_errors(self, errors: List[CodeError]) -> str:
+        error_messages = []
+        for error in errors:
+            error_messages.append(f'Line {error.line}, Column {error.column}: {error.message}')
+        return '\n'.join(error_messages)
+
+    def validate_and_format(self) -> str:
+        errors = self.validate()
+        if errors:
+            return self.format_errors(errors)
+        return 'No errors found'
