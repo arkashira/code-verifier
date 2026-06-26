@@ -1,44 +1,41 @@
-from code_verifier import CodeVerifier, CodeError
+import pytest
+from code_verifier import verify_snippet, verify_manifest
+import json
 
-def test_validate_valid_code():
-    code = 'x = 5\ny = 10'
-    verifier = CodeVerifier(code)
-    errors = verifier.validate()
-    assert not errors
+def test_verify_snippet_pass():
+    snippet = verify_snippet('test.py')
+    assert snippet.status == 'PASS'
 
-def test_validate_invalid_assignment():
-    code = 'x =\ny = 10'
-    verifier = CodeVerifier(code)
-    errors = verifier.validate()
-    assert len(errors) == 1
-    assert errors[0].line == 1
-    assert errors[0].column == 2
-    assert errors[0].message == 'Invalid assignment'
+def test_verify_snippet_fail():
+    snippet = verify_snippet('test.txt')
+    assert snippet.status == 'FAIL'
 
-def test_validate_missing_except_block():
-    code = 'try:\n    x = 5\ny = 10'
-    verifier = CodeVerifier(code)
-    errors = verifier.validate()
-    assert len(errors) == 1
-    assert errors[0].line == 1
-    assert errors[0].column == 0
-    assert errors[0].message == 'Missing except block'
+def test_verify_manifest_pass():
+    manifest = ['test.py', 'test2.py']
+    snippets = verify_manifest(manifest)
+    assert all(snippet.status == 'PASS' for snippet in snippets)
 
-def test_format_errors():
-    errors = [CodeError(1, 2, 'Invalid assignment'), CodeError(3, 4, 'Missing except block')]
-    verifier = CodeVerifier('')
-    formatted_errors = verifier.format_errors(errors)
-    assert formatted_errors == 'Line 1, Column 2: Invalid assignment\nLine 3, Column 4: Missing except block'
+def test_verify_manifest_fail():
+    manifest = ['test.py', 'test.txt']
+    snippets = verify_manifest(manifest)
+    assert any(snippet.status == 'FAIL' for snippet in snippets)
 
-def test_validate_and_format_valid_code():
-    code = 'x = 5\ny = 10'
-    verifier = CodeVerifier(code)
-    result = verifier.validate_and_format()
-    assert result == 'No errors found'
+def test_main_pass(capsys):
+    with open('manifest.json', 'w') as f:
+        json.dump(['test.py', 'test2.py'], f)
+    import sys
+    sys.argv = ['code-verifier-cli', '--manifest', 'manifest.json']
+    from code_verifier import main
+    main()
+    captured = capsys.readouterr()
+    assert captured.out == "test.py: PASS\ntest2.py: PASS\n"
 
-def test_validate_and_format_invalid_code():
-    code = 'x =\ntry:\n    y = 10'
-    verifier = CodeVerifier(code)
-    result = verifier.validate_and_format()
-    assert 'Line 1, Column 2: Invalid assignment' in result
-    assert 'Line 2, Column 0: Missing except block' in result
+def test_main_fail(capsys):
+    with open('manifest.json', 'w') as f:
+        json.dump(['test.py', 'test.txt'], f)
+    import sys
+    sys.argv = ['code-verifier-cli', '--manifest', 'manifest.json']
+    from code_verifier import main
+    with pytest.raises(SystemExit) as excinfo:
+        main()
+    assert excinfo.value.code == 1
